@@ -1,6 +1,6 @@
 buildscript {
     repositories {
-        jcenter()
+        mavenCentral()
         google()
     }
     dependencies {
@@ -9,13 +9,14 @@ buildscript {
     }
 }
 
+plugins {
+    id("com.vanniktech.maven.publish") version "0.33.0" apply false
+}
+
 allprojects {
     repositories {
-        jcenter()
+        mavenCentral()
         google()
     }
 }
 
-task clean(type: Delete) {
-    delete rootProject.buildDir
-}

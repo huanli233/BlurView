@@ -7,6 +7,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
+import android.os.Build;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.widget.FrameLayout;
@@ -27,8 +28,9 @@ public class BlurView extends FrameLayout {
     BlurController blurController = new NoOpController();
 
     @ColorInt
-    private int overlayColor;
+    private int overlayColor = TRANSPARENT;
     private boolean blurAutoUpdate = true;
+    private boolean blurDisabled = false;
 
     public BlurView(Context context) {
         super(context);
@@ -46,9 +48,11 @@ public class BlurView extends FrameLayout {
     }
 
     private void init(AttributeSet attrs, int defStyleAttr) {
-        TypedArray a = getContext().obtainStyledAttributes(attrs, R.styleable.BlurView, defStyleAttr, 0);
-        overlayColor = a.getColor(R.styleable.BlurView_blurOverlayColor, TRANSPARENT);
-        a.recycle();
+        if (attrs != null) {
+            TypedArray a = getContext().obtainStyledAttributes(attrs, R.styleable.BlurView, defStyleAttr, 0);
+            overlayColor = a.getColor(R.styleable.BlurView_blurOverlayColor, TRANSPARENT);
+            a.recycle();
+        }
     }
 
     @Override
@@ -114,11 +118,20 @@ public class BlurView extends FrameLayout {
      */
     public BlurViewFacade setupWith(@NonNull BlurTarget rootView, float scaleFactor, boolean applyNoise) {
         BlurAlgorithm algorithm;
-        if (BlurTarget.canUseHardwareRendering) {
+        if (BlurTarget.canUseHardwareRendering && !blurDisabled) {
             // Ignores the blur algorithm, always uses RenderNodeBlurController and RenderEffect
             algorithm = null;
         } else {
-            algorithm = new RenderScriptBlur(getContext());
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1 && !blurDisabled) {
+                algorithm = new RenderScriptBlur(getContext());
+            } else {
+                try {
+                    Class.forName("androidx.renderscript.RenderScript");
+                    algorithm = new AndroidXRenderScriptBlur(getContext());
+                } catch (ClassNotFoundException e) {
+                    algorithm = new LegacyBlurAlgorithm(overlayColor);
+                }
+            }
         }
         return setupWith(rootView, algorithm, scaleFactor, applyNoise);
     }
@@ -141,6 +154,7 @@ public class BlurView extends FrameLayout {
      * @see BlurViewFacade#setBlurRadius(float)
      */
     public BlurViewFacade setBlurRadius(float radius) {
+        invalidate();
         return blurController.setBlurRadius(radius);
     }
 
@@ -149,6 +163,12 @@ public class BlurView extends FrameLayout {
      */
     public BlurViewFacade setOverlayColor(@ColorInt int overlayColor) {
         this.overlayColor = overlayColor;
+        if (blurController instanceof PreDrawBlurController) {
+            BlurAlgorithm algorithm = ((PreDrawBlurController) blurController).blurAlgorithm;
+            if (algorithm instanceof LegacyBlurAlgorithm) {
+                ((LegacyBlurAlgorithm) algorithm).setOverlayColor(overlayColor);
+            }
+        }
         return blurController.setOverlayColor(overlayColor);
     }
 
@@ -158,6 +178,11 @@ public class BlurView extends FrameLayout {
     public BlurViewFacade setBlurAutoUpdate(boolean enabled) {
         this.blurAutoUpdate = enabled;
         return blurController.setBlurAutoUpdate(enabled);
+    }
+
+    public void setBlurDisabled(boolean disabled) {
+        this.blurDisabled = disabled;
+        invalidate();
     }
 
     /**

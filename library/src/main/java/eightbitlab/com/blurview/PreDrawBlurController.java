@@ -1,9 +1,12 @@
 package eightbitlab.com.blurview;
 
+import static android.os.Build.VERSION_CODES_FULL.JELLY_BEAN_MR1;
+
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
@@ -30,7 +33,7 @@ public final class PreDrawBlurController implements BlurController {
 
     private float blurRadius = DEFAULT_BLUR_RADIUS;
 
-    private final BlurAlgorithm blurAlgorithm;
+    public final BlurAlgorithm blurAlgorithm;
     private final float scaleFactor;
     private final boolean applyNoise;
     private BlurViewCanvas internalCanvas;
@@ -171,7 +174,7 @@ public final class PreDrawBlurController implements BlurController {
         canvas.scale(scaleFactorW, scaleFactorH);
         blurAlgorithm.render(canvas, internalBitmap);
         canvas.restore();
-        if (applyNoise) {
+        if (applyNoise && Build.VERSION.SDK_INT_FULL >= JELLY_BEAN_MR1) {
             Noise.apply(canvas, blurView.getContext(), blurView.getWidth(), blurView.getHeight());
         }
         if (overlayColor != TRANSPARENT) {
@@ -228,8 +231,10 @@ public final class PreDrawBlurController implements BlurController {
         if (enabled) {
             rootView.getViewTreeObserver().addOnPreDrawListener(drawListener);
             // Track changes in the blurView window too, for example if it's in a bottom sheet dialog
-            if (rootView.getWindowId() != blurView.getWindowId()) {
-                blurView.getViewTreeObserver().addOnPreDrawListener(drawListener);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+                if (rootView.getWindowId() != blurView.getWindowId()) {
+                    blurView.getViewTreeObserver().addOnPreDrawListener(drawListener);
+                }
             }
         }
         return this;

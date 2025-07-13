@@ -6,14 +6,12 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.os.Build;
-import android.renderscript.Allocation;
-import android.renderscript.Element;
-import android.renderscript.RenderScript;
-import android.renderscript.ScriptIntrinsicBlur;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.RequiresApi;
+import androidx.renderscript.Allocation;
+import androidx.renderscript.Element;
+import androidx.renderscript.RenderScript;
+import androidx.renderscript.ScriptIntrinsicBlur;
 
 /**
  * Blur using RenderScript, processed on GPU when device drivers support it.
@@ -23,9 +21,8 @@ import androidx.annotation.RequiresApi;
  * On API 31+ an alternative hardware accelerated blur implementation is automatically used.
  */
 @Deprecated
-@RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR1)
     //Paint object to draw the blurred bitmap
-public class RenderScriptBlur implements BlurAlgorithm {
+public class AndroidXRenderScriptBlur implements BlurAlgorithm {
     //RenderScript object to create the blur script
     private final Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG);
     //Blur script object
@@ -41,7 +38,7 @@ public class RenderScriptBlur implements BlurAlgorithm {
     /**
      * @param context Context to create the {@link RenderScript}
      */
-    public RenderScriptBlur(@NonNull Context context) {
+    public AndroidXRenderScriptBlur(@NonNull Context context) {
         renderScript = RenderScript.create(context);
         blurScript = ScriptIntrinsicBlur.create(renderScript, Element.U8_4(renderScript));
     }

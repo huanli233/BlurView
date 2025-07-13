@@ -1,6 +1,6 @@
 apply plugin: 'com.android.library'
 apply plugin: 'de.mannodermaus.android-junit5'
-apply plugin: 'maven-publish'
+apply plugin: 'com.vanniktech.maven.publish'
 
 android {
     compileSdkVersion 36
@@ -12,8 +12,10 @@ android {
     }
 
     defaultConfig {
-        minSdkVersion 18
+        minSdkVersion 14
         targetSdkVersion 36
+        renderscriptTargetApi 24
+        renderscriptSupportModeEnabled true
         testInstrumentationRunner "de.mannodermaus.junit5.AndroidJUnit5Builder"
     }
 
@@ -26,72 +28,50 @@ android {
             }
         }
     }
-}
 
-configurations {
-    javadocDeps
+    lintOptions {
+        abortOnError false
+    }
 }
 
 dependencies {
+    compileOnly project(":renderscript")
     implementation 'androidx.annotation:annotation:1.9.1'
-    javadocDeps 'androidx.annotation:annotation:1.9.1'
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.11.4'
 }
 
-task androidJavadocs(type: Javadoc) {
-    failOnError = false
-    source = android.sourceSets.main.java.srcDirs
-    ext.androidJar = "${android.sdkDirectory}/platforms/${android.compileSdkVersion}/android.jar"
-    classpath += files(ext.androidJar)
-}
+mavenPublishing {
+    coordinates("com.huanli233.blurview", "blurview", "3.0.3")
+    pom {
+        name = 'BlurView'
+        description = 'Dynamic iOS-like blur on Android'
+        url = 'https://github.com/Dimezis/BlurView'
 
-task androidJavadocsJar(type: Jar, dependsOn: androidJavadocs) {
-    from androidJavadocs.destinationDir
-    archiveClassifier = 'javadoc'
-}
-
-task androidSourcesJar(type: Jar) {
-    from android.sourceSets.main.java.srcDirs
-    archiveClassifier = 'sources'
-}
-
-publishing {
-    publications {
-        maven(MavenPublication) {
-            groupId = 'com.github.Dimezis'
-            artifactId = 'BlurView' 
-            version = "3.0.0"
-            
-            artifact("$buildDir/outputs/aar/${project.getName()}-release.aar") {
-                builtBy assemble
+        licenses {
+            license {
+                name = 'The Apache License, Version 2.0'
+                url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
             }
-            artifact androidSourcesJar
-            artifact androidJavadocsJar
-            
-            pom {
-                name = 'BlurView'
-                description = 'Dynamic iOS-like blur on Android'
-                url = 'https://github.com/Dimezis/BlurView'
-                
-                licenses {
-                    license {
-                        name = 'Apache License, Version 2.0'
-                        url = 'https://opensource.org/license/apache-2-0'
-                    }
-                }
-                
-                developers {
-                    developer {
-                        id = 'dimezis'
-                        name = 'Dmytro Saviuk'
-                    }
-                }
+        }
+
+        developers {
+            developer {
+                id = 'dimezis'
+                name = 'Dmytro Saviuk'
             }
+        }
+
+        scm {
+            connection = 'scm:git:github.com/Dimezis/BlurView.git'
+            developerConnection = 'scm:git:ssh://github.com/Dimezis/BlurView.git'
+            url = 'https://github.com/Dimezis/BlurView/tree/master'
         }
     }
 }
 
-// Task to be run by JitPack
-task install(dependsOn: publishToMavenLocal)
+task install(dependsOn: publishToMavenLocal) {
+    group = 'publishing'
+    description = 'Publishes the library to the local Maven repository.'
+}
